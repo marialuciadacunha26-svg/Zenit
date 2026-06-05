@@ -4,8 +4,7 @@ const {
   Collection
 } = require('discord.js');
 
-const fs = require('fs');
-const config = require('./config.json');
+const config = require('./Config.json');
 
 const client = new Client({
   intents: [
@@ -18,12 +17,14 @@ const client = new Client({
 
 client.commands = new Collection();
 
-const commandFiles = fs
-  .readdirSync('./commands')
-  .filter(file => file.endsWith('.js'));
+const comandos = [
+  require('./Ban.js'),
+  require('./Ping.js'),
+  require('./Ticket.js'),
+  require('./Ia.js')
+];
 
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
+for (const command of comandos) {
   client.commands.set(command.data.name, command);
 }
 
@@ -44,6 +45,10 @@ client.on('interactionCreate', async interaction => {
     await command.execute(interaction);
   } catch (error) {
     console.error(error);
+    interaction.reply({
+      content: 'Erro ao executar comando.',
+      ephemeral: true
+    });
   }
 });
 
