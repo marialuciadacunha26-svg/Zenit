@@ -1,55 +1,34 @@
-const {
-  Client,
-  GatewayIntentBits,
-  Collection
-} = require('discord.js');
-
-const config = require('./Config.json');
+require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
+const { Client, GatewayIntentBits, Collection } = require("discord.js");
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.MessageContent
   ]
 });
 
 client.commands = new Collection();
 
-const comandos = [
-  require('./Ban.js'),
-  require('./Ping.js'),
-  require('./Ticket.js'),
-  require('./Ia.js')
-];
-
-for (const command of comandos) {
-  client.commands.set(command.data.name, command);
+// comandos
+const commandsPath = path.join(__dirname, "commands");
+for (const file of fs.readdirSync(commandsPath)) {
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.name, command);
 }
 
-client.once('ready', () => {
-  console.log(`${client.user.tag} online!`);
-});
-
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(
-    interaction.commandName
-  );
-
-  if (!command) return;
-
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    interaction.reply({
-      content: 'Erro ao executar comando.',
-      ephemeral: true
-    });
+// eventos
+const eventsPath = path.join(__dirname, "events");
+for (const file of fs.readdirSync(eventsPath)) {
+  const event = require(`./events/${file}`);
+  if (event.once) {
+    client.once(event.name, (...args) => event.execute(...args, client));
+  } else {
+    client.on(event.name, (...args) => event.execute(...args, client));
   }
-});
+}
 
-client.login(config.token);
+client.login(process.env.DISCORD_TOKEN);
